@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulasi Listrik Dinamis - Hukum Ohm</title>
+<style>
+:root{
+  --blue:#2563eb;--blue2:#dbeafe;--green:#16a34a;--red:#dc2626;
+  --orange:#f59e0b;--dark:#172033;--muted:#64748b;--bg:#f4f7fb;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--dark);line-height:1.5}
+header{background:linear-gradient(135deg,#1d4ed8,#2563eb 55%,#60a5fa);color:white;padding:28px 18px;text-align:center}
+header h1{margin:0 0 6px;font-size:clamp(25px,4vw,38px)}
+header p{margin:0;opacity:.95}
+.container{max-width:1150px;margin:22px auto;padding:0 15px}
+.grid{display:grid;grid-template-columns:1fr 1.35fr;gap:18px}
+.card{background:white;border-radius:18px;padding:20px;box-shadow:0 5px 20px #17203312;margin-bottom:18px}
+.card h2,.card h3{margin-top:0}
+.controls{display:grid;gap:15px}
+.control{border:1px solid #e2e8f0;border-radius:14px;padding:13px}
+.control label{display:flex;justify-content:space-between;font-weight:bold}
+input[type=range]{width:100%;accent-color:var(--blue);margin:12px 0 4px}
+input[type=number]{width:110px;padding:8px;border:1px solid #cbd5e1;border-radius:8px}
+.unitRow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.unitRow select{padding:8px;border:1px solid #cbd5e1;border-radius:8px;background:white}
+.mode{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px}
+button{border:0;border-radius:10px;padding:10px 14px;font-weight:bold;cursor:pointer;background:#e2e8f0;color:var(--dark)}
+button.active{background:var(--blue);color:white}
+button.primary{background:var(--green);color:white}
+button:hover{filter:brightness(.96)}
+.result{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:15px}
+.metric{background:#f8fafc;border-radius:14px;padding:13px;text-align:center}
+.metric strong{display:block;font-size:24px;margin-top:4px}
+.metric.i{border-top:5px solid var(--blue)}.metric.r{border-top:5px solid var(--orange)}.metric.v{border-top:5px solid var(--green)}
+canvas{width:100%;height:310px;background:#fff;border:1px solid #e2e8f0;border-radius:14px}
+.formula{font-size:21px;text-align:center;background:var(--blue2);padding:12px;border-radius:12px;font-weight:bold}
+.explain{background:#f8fafc;border-left:5px solid var(--blue);padding:13px;border-radius:8px}
+.quiz-q{border:1px solid #e2e8f0;border-radius:13px;padding:15px;margin:12px 0}
+.quiz-q label{display:block;padding:7px;border-radius:8px;cursor:pointer}
+.quiz-q label:hover{background:#f1f5f9}
+.feedback{font-weight:bold;margin-top:12px}
+.good{color:var(--green)}.bad{color:var(--red)}
+table{width:100%;border-collapse:collapse}th,td{border-bottom:1px solid #e2e8f0;padding:9px;text-align:left}
+.small{font-size:13px;color:var(--muted)}
+@media(max-width:850px){.grid{grid-template-columns:1fr}.result{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>⚡ SIMULASI HUKUM OHM</h1>
+  <h2>SMP SANTA ANGELA</h2>
+  <p>Kelas IX SMP • Hubungan Tegangan, Arus, dan Hambatan • Hukum Ohm</p>
+</header>
+
+<div class="container">
+<div class="grid">
+<section>
+<div class="card">
+<h2>🎛️ 1. Atur Besaran Listrik</h2>
+<p>Pilih <b>satu besaran yang ingin dicari</b>. Dua besaran lainnya menjadi input.</p>
+<div class="mode">
+<button class="modeBtn active" data-mode="I">Cari Arus (I)</button>
+<button class="modeBtn" data-mode="V">Cari Tegangan (V)</button>
+<button class="modeBtn" data-mode="R">Cari Hambatan (R)</button>
+</div>
+
+<div id="controls" class="controls"></div>
+<div class="formula" id="formula">I = V ÷ R</div>
+
+<div class="result">
+<div class="metric i">Arus <strong id="outI">0 A</strong></div>
+<div class="metric r">Hambatan <strong id="outR">0 Ω</strong></div>
+<div class="metric v">Tegangan <strong id="outV">0 V</strong></div>
+</div>
+<p class="explain" id="explain"></p>
+</div>
+
+<div class="card">
+<h2>💡 Visualisasi Rangkaian</h2>
+<canvas id="circuit" width="850" height="310"></canvas>
+<p class="small">Ketika nilai berubah, indikator lampu dan kecepatan gerak elektron juga berubah secara visual.</p>
+</div>
+</section>
+
+<section>
+<div class="card">
+<h2>📈 Grafik Hubungan Besaran</h2>
+<canvas id="graph" width="850" height="310"></canvas>
+<p id="graphText" class="small"></p>
+</div>
+
+<div class="card">
+<h2>🧠 Eksperimen Cepat</h2>
+<p>Cobalah membuat prediksi sebelum mengubah nilai:</p>
+<ul>
+<li>Jika <b>V diperbesar</b> sementara R tetap, apa yang terjadi pada I?</li>
+<li>Jika <b>R diperbesar</b> sementara V tetap, apa yang terjadi pada I?</li>
+<li>Jika <b>V dan R sama-sama diperbesar</b>, apakah I pasti bertambah?</li>
+</ul>
+<p><b>Tantangan:</b> atur nilai hingga arus tepat <b>2 A</b>. Catat minimal 2 pasangan nilai V dan R yang menghasilkan 2 A.</p>
+</div>
+
+<div class="card">
+<h2>📝 Evaluasi & Kuis</h2>
+<p>Kerjakan tanpa melihat kunci. Nilai akan muncul setelah dikumpulkan.</p>
+<form id="quiz"></form>
+<button class="primary" id="submitQuiz">Periksa Jawaban</button>
+<button id="resetQuiz">Ulangi</button>
+<div id="score" class="feedback"></div>
+</div>
+</section>
+</div>
+
+<div class="card">
+<h2>📚 Ringkasan Konsep</h2>
+<table>
+<tr><th>Besaran</th><th>Simbol</th><th>Satuan SI</th><th>Makna sederhana</th></tr>
+<tr><td>Tegangan</td><td>V</td><td>milivolt (mV) – volt (V) – kilovolt (kV)</td><td>“Dorongan” yang menyebabkan muatan bergerak.</td></tr>
+<tr><td>Arus listrik</td><td>I</td><td>miliampere (mA) – ampere (A)</td><td>Laju aliran muatan listrik.</td></tr>
+<tr><td>Hambatan</td><td>R</td><td>ohm (Ω) – kiloohm (kΩ)</td><td>Ukuran seberapa besar suatu komponen menghambat arus.</td></tr>
+</table>
+<p class="formula">V = I × R &nbsp;&nbsp; ⇄ &nbsp;&nbsp; I = V/R &nbsp;&nbsp; ⇄ &nbsp;&nbsp; R = V/I</p>
+<p><b>Konversi:</b> 1 A = 1000 mA &nbsp;•&nbsp; 1 kΩ = 1000 Ω &nbsp;•&nbsp; 1 kV = 1000 V &nbsp;•&nbsp; 1 V = 1000 mV</p>
+</div>
+</div>
+
+<script>
+const state={mode:"I",V:12,R:6,I:2};
+const controls=document.getElementById("controls");
+const formula=document.getElementById("formula");
+const explain=document.getElementById("explain");
+const outI=document.getElementById("outI"),outR=document.getElementById("outR"),outV=document.getElementById("outV");
+
+function makeControl(key,label,min,max,step,unit){
+  const presets = key==="I"
+    ? `<option value="A">A (ampere)</option><option value="mA">mA (miliampere)</option>`
+    : key==="R"
+    ? `<option value="Ω">Ω (ohm)</option><option value="kΩ">kΩ (kiloohm)</option>`
+    : `<option value="V">V (volt)</option><option value="mV">mV (milivolt)</option><option value="kV">kV (kilovolt)</option>`;
+  return `<div class="control">
+    <label>${label}<span id="${key}Val"></span></label>
+    <input type="range" id="${key}" min="${min}" max="${max}" step="${step}" value="${state[key]}">
+    <div class="unitRow">
+      <input type="number" id="${key}Num" min="${min}" max="${max}" step="${step}" value="${state[key]}">
+      <select id="${key}Unit">${presets}</select>
+    </div>
+  </div>`;
+}
+function renderControls(){
+  if(state.mode==="I"){
+    controls.innerHTML=makeControl("V","Tegangan (V)",0.1,100,0.1,"V")+makeControl("R","Hambatan (R)",1,10000,1,"Ω");
+    formula.textContent="I = V ÷ R";
+  }else if(state.mode==="V"){
+    controls.innerHTML=makeControl("I","Arus (I)",0.001,5,0.001,"A")+makeControl("R","Hambatan (R)",1,10000,1,"Ω");
+    formula.textContent="V = I × R";
+  }else{
+    controls.innerHTML=makeControl("V","Tegangan (V)",0.1,100,0.1,"V")+makeControl("I","Arus (I)",0.001,5,0.001,"A");
+    formula.textContent="R = V ÷ I";
+  }
+  ["V","R","I"].forEach(k=>{
+    const slider=document.getElementById(k),num=document.getElementById(k+"Num");
+    if(!slider)return;
+    const syncBase=v=>{state[k]=Number(v);slider.value=v;num.value=toDisplay(k,state[k],displayUnit(k));update()};
+    slider.addEventListener("input",e=>syncBase(e.target.value));
+    num.addEventListener("input",e=>{state[k]=fromDisplay(k,Number(e.target.value),displayUnit(k));slider.value=state[k];update()});
+    const unit=document.getElementById(k+"Unit");
+    if(unit) unit.addEventListener("change",()=>{num.value=toDisplay(k,state[k],unit.value);update()});
+  });
+  update();
+}
+
+function displayUnit(key){
+  const e=document.getElementById(key+"Unit");
+  return e ? e.value : (key==="I"?"A":key==="R"?"Ω":"V");
+}
+function toDisplay(key,value,unit){
+  if(key==="I") return unit==="mA" ? value*1000 : value;
+  if(key==="R") return unit==="kΩ" ? value/1000 : value;
+  if(key==="V"){
+    if(unit==="mV") return value*1000;
+    if(unit==="kV") return value/1000;
+    return value;
+  }
+  return value;
+}
+function fromDisplay(key,value,unit){
+  if(key==="I") return unit==="mA" ? value/1000 : value;
+  if(key==="R") return unit==="kΩ" ? value*1000 : value;
+  if(key==="V"){
+    if(unit==="mV") return value/1000;
+    if(unit==="kV") return value*1000;
+    return value;
+  }
+  return value;
+}
+function autoValue(key,value){
+  if(key==="I" && value<1) return fmt(value*1000)+" mA";
+  if(key==="R" && value>=1000) return fmt(value/1000)+" kΩ";
+  if(key==="V" && value<1) return fmt(value*1000)+" mV";
+  if(key==="V" && value>=1000) return fmt(value/1000)+" kV";
+  return fmt(value)+(key==="V"?" V":key==="R"?" Ω":" A");
+}
+
+function update(){
+  if(state.mode==="I") state.I=state.V/state.R;
+  if(state.mode==="V") state.V=state.I*state.R;
+  if(state.mode==="R") state.R=state.V/state.I;
+  outI.textContent=autoValue("I",state.I);
+  outR.textContent=autoValue("R",state.R);
+  outV.textContent=autoValue("V",state.V);
+  ["V","R","I"].forEach(k=>{
+    const e=document.getElementById(k+"Val");
+    if(e)e.textContent=autoValue(k,state[k]);
+    const n=document.getElementById(k+"Num");
+    if(n)n.value=toDisplay(k,state[k],displayUnit(k));
+  });
+  let text="";
+  if(state.mode==="I") text=`Karena V = ${autoValue("V",state.V)} dan R = ${autoValue("R",state.R)}, maka I = V/R = ${autoValue("I",state.I)}. Jika V naik, arus cenderung naik. Jika R naik, arus cenderung turun (ketika V tetap).`;
+  if(state.mode==="V") text=`Karena I = ${autoValue("I",state.I)} dan R = ${autoValue("R",state.R)}, maka V = I×R = ${autoValue("V",state.V)}. Untuk menghasilkan arus yang lebih besar melalui R yang sama, diperlukan tegangan yang lebih besar.`;
+  if(state.mode==="R") text=`Karena V = ${autoValue("V",state.V)} dan I = ${autoValue("I",state.I)}, maka R = V/I = ${autoValue("R",state.R)}. Hambatan makin besar berarti, pada V yang sama, arus makin kecil.`;
+  explain.textContent=text;
+  drawCircuit();drawGraph();
+}
+function fmt(x){return Number.isFinite(x)?(Math.round(x*100)/100).toString():"—"}
+
+document.querySelectorAll(".modeBtn").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".modeBtn").forEach(x=>x.classList.remove("active"));b.classList.add("active");
+  state.mode=b.dataset.mode;renderControls();
+}));
+
+function drawCircuit(){
+ const c=document.getElementById("circuit"),ctx=c.getContext("2d"),w=c.width,h=c.height;
+ ctx.clearRect(0,0,w,h);
+ const y=155;ctx.lineWidth=5;ctx.strokeStyle="#334155";
+ ctx.beginPath();ctx.moveTo(80,y);ctx.lineTo(225,y);ctx.moveTo(350,y);ctx.lineTo(535,y);ctx.moveTo(660,y);ctx.lineTo(770,y);ctx.moveTo(80,y);ctx.lineTo(80,225);ctx.lineTo(770,225);ctx.lineTo(770,y);ctx.stroke();
+ // battery
+ ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(225,125);ctx.lineTo(225,185);ctx.moveTo(245,110);ctx.lineTo(245,200);ctx.stroke();
+ ctx.font="bold 18px Arial";ctx.fillText("Sumber",195,85);ctx.fillText(fmt(state.V)+" V",195,220);
+ // resistor
+ ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(350,y);for(let x=350;x<=535;x+=23){ctx.lineTo(x+11,y-18);ctx.lineTo(x+23,y)}ctx.stroke();
+ ctx.fillText("R = "+fmt(state.R)+" Ω",385,115);
+ // lamp
+ const brightness=Math.min(1,Math.max(0,state.I/3));
+ ctx.beginPath();ctx.arc(600,y,45,0,Math.PI*2);ctx.stroke();ctx.font="36px Arial";ctx.fillText("💡",578,168);
+ ctx.font="bold 18px Arial";ctx.fillText("I = "+fmt(state.I)+" A",555,225);
+ // electrons
+ const speed=Math.min(14,2+state.I*3);ctx.fillStyle="#2563eb";
+ for(let x=100;x<760;x+=55){let px=100+((Date.now()/20*speed+x)%650);ctx.beginPath();ctx.arc(px,y+70,5,0,Math.PI*2);ctx.fill()}
+ ctx.fillStyle="#172033";ctx.font="16px Arial";ctx.fillText("Arah aliran muatan konvensional →",300,270);
+}
+setInterval(()=>{drawCircuit()},60);
+
+function drawGraph(){
+ const c=document.getElementById("graph"),ctx=c.getContext("2d"),w=c.width,h=c.height;
+ ctx.clearRect(0,0,w,h);ctx.strokeStyle="#475569";ctx.lineWidth=2;
+ ctx.beginPath();ctx.moveTo(65,25);ctx.lineTo(65,270);ctx.lineTo(805,270);ctx.stroke();
+ ctx.font="bold 16px Arial";ctx.fillText(state.mode==="R"?"R (Ω)":state.mode==="V"?"V (V)":"I (A)",20,35);
+ ctx.fillText(state.mode==="V"?"I (A)":state.mode==="I"?"V (V)":"I (A)",750,300);
+ let maxX=state.mode==="I"?24:5,maxY=state.mode==="I"?4:state.mode==="V"?100:24;
+ const pts=[];
+ for(let n=0;n<=60;n++){
+   const x=maxX*n/60;let yv;
+   if(state.mode==="I") yv=x/state.R;
+   else if(state.mode==="V") yv=x*state.R;
+   else yv=x===0?0:state.V/x;
+   if(yv<=maxY)pts.push([x,yv]);
+ }
+ ctx.strokeStyle="#2563eb";ctx.lineWidth=4;ctx.beginPath();
+ pts.forEach((p,i)=>{let X=65+p[0]/maxX*740,Y=270-p[1]/maxY*235;i?ctx.lineTo(X,Y):ctx.moveTo(X,Y)});ctx.stroke();
+ ctx.fillStyle="#64748b";ctx.font="14px Arial";
+ ctx.fillText("0",50,288);ctx.fillText(fmt(maxX),780,288);
+ ctx.fillText("Hubungan berdasarkan nilai tetap yang sedang dipilih",280,35);
+ document.getElementById("graphText").textContent=
+ state.mode==="I"?`Grafik V terhadap I untuk R = ${fmt(state.R)} Ω: V dan I berbanding lurus.`:
+ state.mode==="V"?`Grafik V terhadap I untuk R = ${fmt(state.R)} Ω: semakin besar I, semakin besar V.`:
+ `Grafik R terhadap I untuk V = ${fmt(state.V)} V: saat I bertambah, R yang diperlukan untuk V tetap semakin kecil.`;
+}
+
+const questions=[
+ {q:"Sebuah resistor 6 Ω diberi tegangan 12 V. Besar arusnya adalah …",a:["0,5 A","2 A","6 A","72 A"],c:1},
+ {q:"Jika tegangan tetap dan hambatan diperbesar 2 kali, arus menjadi …",a:["2 kali lebih besar","tetap","½ kali semula","4 kali lebih besar"],c:2},
+ {q:"Besaran yang satuannya ampere adalah …",a:["Tegangan","Arus","Hambatan","Energi"],c:1},
+ {q:"Jika I = 3 A dan R = 4 Ω, tegangan sumber adalah …",a:["0,75 V","1 V","7 V","12 V"],c:3},
+ {q:"Manakah hubungan Hukum Ohm yang benar?",a:["V = I + R","V = I × R","I = V × R","R = V × I"],c:1},
+ {q:"Untuk V = 10 V dan I = 2 A, hambatannya adalah …",a:["5 Ω","8 Ω","12 Ω","20 Ω"],c:0}
+];
+function renderQuiz(){
+ const f=document.getElementById("quiz");f.innerHTML="";
+ questions.forEach((x,i)=>{
+  const d=document.createElement("div");d.className="quiz-q";
+  d.innerHTML=`<b>${i+1}. ${x.q}</b>`+x.a.map((v,j)=>`<label><input type="radio" name="q${i}" value="${j}"> ${v}</label>`).join("");
+  f.appendChild(d);
+ });
+}
+document.getElementById("submitQuiz").onclick=()=>{
+ let score=0,answered=0;
+ questions.forEach((x,i)=>{const s=document.querySelector(`input[name=q${i}]:checked`);if(s){answered++;if(Number(s.value)===x.c)score++}});
+ const pct=Math.round(score/questions.length*100);
+ const el=document.getElementById("score");
+ el.className="feedback "+(pct>=70?"good":"bad");
+ el.textContent=`Skor: ${score}/${questions.length} (${pct}%). Terjawab: ${answered}/${questions.length}. ${pct>=70?"Bagus! Lanjutkan dengan eksperimen.":"Coba ulangi setelah membaca kembali hubungan V, I, dan R."}`;
+};
+document.getElementById("resetQuiz").onclick=()=>{renderQuiz();document.getElementById("score").textContent=""};
+
+renderQuiz();renderControls();
+</script>
+</body>
+</html>
